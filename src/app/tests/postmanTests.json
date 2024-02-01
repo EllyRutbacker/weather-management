@@ -1,0 +1,90 @@
+{
+    "info": {
+        "name": "Weather API Tests",
+        "_postman_id": "f8fda309-7ce4-432b-9b55-7eede45a96e0",
+        "description": "CRUD tests collection",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+      },
+    "item": [
+      {
+        "name": "Create Weather Condition",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Authorization",
+              "value": "Bearer {{POSTMAN_API_KEY}}"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"adjective\":\"Sunny\"}"
+          },
+          "url": {
+            "raw": "{{base_url}}/weather"
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get All Weather Conditions",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{POSTMAN_API_KEY}}"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/weather"
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Weather Condition",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Authorization",
+              "value": "Bearer {{POSTMAN_API_KEY}}"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"adjective\":\"Cloudy\"}"
+          },
+          "url": {
+            "raw": "{{base_url}}/weather/{{weather_id}}"
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Delete Weather Condition",
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer {{POSTMAN_API_KEY}}"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/weather/{{weather_id}}"
+          }
+        },
+        "response": []
+      }
+    ]
+}

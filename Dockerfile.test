@@ -1,0 +1,17 @@
+# From base image node
+FROM node:20
+
+# Create working directory in the container
+WORKDIR /src/app/tests
+
+# Copy files from app file system to container file system
+COPY package.json .
+COPY index.js .
+COPY /src/app .
+COPY /src/app/tests .
+
+# Install dependencies
+RUN npm install
+
+# Run tests
+CMD ["npm", "test"]
