@@ -3,14 +3,15 @@ FROM node:20
 # Create working directory in the container
 WORKDIR /src/app
 
-# Copy files from app file system to container file system
+# Copy package.json and package-lock.json separately to leverage Docker cache
 COPY package.json .
-COPY index.js .
-COPY /src/app .
-COPY .env .
+COPY package-lock.json .
 
 # Install dependencies
 RUN npm install
+
+# Copy the rest of the application files
+COPY . .
 
 # Run image
 CMD ["npm", "start"]

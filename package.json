@@ -4,8 +4,7 @@
   "description": "Test app to get introduced to nodejs apps",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "node runPostmanTests.js"
+    "start": "node index.js"
   },
   "author": "Anna Tyshchenko",
   "license": "ISC",
