@@ -1,72 +1,75 @@
 require('dotenv').config();
-const { createConnection } = require('typeorm');
 
-const {
-  POSTGRES_USER,
-  POSTGRES_HOST,
-  POSTGRES_DB,
-  POSTGRES_PASSWORD,
-  POSTGRES_PORT,
-} = process.env;
+const sequelize = require('./config/database');
+const WeatherCondition = require('./entities/WeatherCondition');
 
-// Create connection options for DB
-createConnection({
-  type: 'postgres',
-  host: POSTGRES_HOST,
-  port: POSTGRES_PORT,
-  username: POSTGRES_USER,
-  password: POSTGRES_PASSWORD,
-  database: POSTGRES_DB,
-  synchronize: true,
-  logging: true,
-  entities: ['src/app/entities/*.js'],
-})
-  .then(async (connection) => {
-    // CREATE
-    async function createWeatherCondition(adjective) {
-      const result = await connection.query(
-        'INSERT INTO weather_conditions(adjective) VALUES($1) RETURNING *',
-        [adjective]
-      );
-      return result[0];
-    }
+// Sync the model with the database
+sequelize.sync({ force: false })
+  .then(() => console.log('Database tables synchronized.'))
+  .catch(error => console.error('Error synchronizing tables:', error));
 
-    // READ all
-    async function getAllWeatherConditions() {
-      const result = await connection.query('SELECT * FROM weather_conditions');
-      return result;
-    }
+// Function to create a new weather condition
+async function createWeatherCondition(adjective) {
+  try {
+    const newWeatherCondition = await WeatherCondition.create({ adjective });
+    return newWeatherCondition.toJSON();
+  } catch (error) {
+    console.error('Error creating WeatherCondition:', error);
+    throw error;
+  }
+}
 
-    // READ by ID
-    async function getWeatherConditionById(id) {
-      const result = await connection.query('SELECT * FROM weather_conditions WHERE id = $1', [id]);
-      return result[0];
-    }
+// Function to get all weather conditions
+async function getAllWeatherConditions() {
+  try {
+    const weatherConditions = await WeatherCondition.findAll();
+    return weatherConditions.map(condition => condition.toJSON());
+  } catch (error) {
+    console.error('Error getting all WeatherConditions:', error);
+    throw error;
+  }
+}
 
-    // UPDATE by ID
-    async function updateWeatherConditionById(id, adjective) {
-      const result = await connection.query(
-        'UPDATE weather_conditions SET adjective = $2 WHERE id = $1 RETURNING *',
-        [id, adjective]
-      );
-      return result[0];
-    }
+// Function to get a weather condition by ID
+async function getWeatherConditionById(id) {
+  try {
+    const condition = await WeatherCondition.findByPk(id);
+    return condition ? condition.toJSON() : null;
+  } catch (error) {
+    console.error('Error getting WeatherCondition by ID:', error);
+    throw error;
+  }
+}
 
-    // DELETE by ID
-    async function deleteWeatherConditionById(id) {
-      const result = await connection.query(
-        'DELETE FROM weather_conditions WHERE id = $1 RETURNING *',
-        [id]
-      );
-      return result[0];
-    }
-    
-    module.exports = {
-      createWeatherCondition,
-      getAllWeatherConditions,
-      getWeatherConditionById,
-      updateWeatherConditionById,
-      deleteWeatherConditionById,
-    };
-  })
-  .catch((error) => console.error('Error creating connection:', error));
+// Function to update a weather condition by ID
+async function updateWeatherConditionById(id, adjective) {
+  try {
+    const [numUpdated, updatedCondition] = await WeatherCondition.update(
+      { adjective },
+      { where: { id }, returning: true }
+    );
+    return numUpdated > 0 ? updatedCondition[0].toJSON() : null;
+  } catch (error) {
+    console.error('Error updating WeatherCondition by ID:', error);
+    throw error;
+  }
+}
+
+// Function to delete a weather condition by ID
+async function deleteWeatherConditionById(id) {
+  try {
+    const deletedCondition = await WeatherCondition.destroy({ where: { id }, returning: true });
+    return deletedCondition.length > 0 ? deletedCondition[0].toJSON() : null;
+  } catch (error) {
+    console.error('Error deleting WeatherCondition by ID:', error);
+    throw error;
+  }
+}
+
+module.exports = {
+  createWeatherCondition,
+  getAllWeatherConditions,
+  getWeatherConditionById,
+  updateWeatherConditionById,
+  deleteWeatherConditionById,
+};

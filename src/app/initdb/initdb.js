@@ -1,97 +1,76 @@
-const { createConnection } = require('typeorm');
-const fs = require('fs').promises;
-const path = require('path');
+const { Sequelize } = require('sequelize');
+const WeatherCondition = require('../entities/WeatherCondition');
+const { POSTGRES_USER, POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_PORT } = process.env;
 
-async function checkDatabaseExists(connectionOptions) {
+async function initializeDatabase() {
   try {
-    const connection = await createConnection(connectionOptions);
 
-    const queryRunner = connection.createQueryRunner();
+    // Використовуємо додаткове з'єднання без вказаної бази даних
+    const sequelizePostgres = new Sequelize({
+      database: 'postgres',
+      username: POSTGRES_USER,
+      password: POSTGRES_PASSWORD,
+      host: POSTGRES_HOST,
+      port: POSTGRES_PORT,
+      dialect: 'postgres',
+    });
 
-    const databaseExists = await queryRunner.query(
-      await fs.readFile(path.join(__dirname, 'sql', 'check-database-exists.sql'), 'utf-8'),
-      [connectionOptions.database]
+    await sequelizePostgres.authenticate();
+    console.log('Connection to the database postgres has been established successfully.');
+
+    // Перевіряємо існування бази даних
+    const databaseExists = await sequelizePostgres.queryInterface.sequelize.query(
+      `SELECT 1 FROM pg_database WHERE datname = '${POSTGRES_DB}'`
     );
 
-    await queryRunner.release();
-    await connection.close();
+    if (databaseExists[0].length === 0) {
+      console.log(`Database ${POSTGRES_DB} does not exist. Creating...`);
+      await sequelizePostgres.queryInterface.createDatabase(POSTGRES_DB);
+      console.log(`Database ${POSTGRES_DB} created.`);
+    }
+    await sequelizePostgres.close();
 
-    return databaseExists.length > 0;
-  } catch (error) {
-    console.error('Error checking database existence:', error);
-    return false;
-  }
-}
+    // Now connect to weatherdb
+    const sequelize = new Sequelize(POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, {
+      host: POSTGRES_HOST,
+      port: POSTGRES_PORT,
+      dialect: 'postgres',
+    });
 
-async function createDatabaseIfNotExists(connectionOptions) {
-  try {
-    const connection = await createConnection(connectionOptions);
+    // Check that table exists in the schema
+    await sequelize.authenticate();
+    console.log(`Connection to the database ${POSTGRES_DB} has been established successfully.`);
 
-    const databaseExists = await checkDatabaseExists(connectionOptions);
-    if (!databaseExists) {
-      const createDatabaseScript = await fs.readFile(path.join(__dirname, 'sql', 'create-database.sql'), 'utf-8');
-      await connection.query(createDatabaseScript, { databaseName: connectionOptions.database });
+    const weatherConditionTableExists = await sequelize.getQueryInterface().showAllTables()
+      .then((tables) => tables.includes('WeatherConditions'));
 
-      console.log(`Database "${connectionOptions.database}" created successfully`);
+    if (!weatherConditionTableExists) {
+      // Sync if not exists
+      await sequelize.sync({ force: true });
+      console.log('Database tables synchronized.');
     } else {
-      console.log(`Database "${connectionOptions.database}" already exists. Skipping creation.`);
+      console.log('Database tables already exist. Skipping synchronization.');
     }
 
-    await connection.close();
-    return databaseExists;
+    // Insert data with ignore duplicates option
+    await WeatherCondition.bulkCreate([
+      { adjective: 'Sunny' },
+      { adjective: 'Cloudy' },
+      { adjective: 'Rainy' },
+      { adjective: 'Windy' },
+      { adjective: 'Foggy' },
+      { adjective: 'Snowy' },
+      { adjective: 'Stormy' },
+      { adjective: 'Clear' },
+      { adjective: 'Overcast' },
+      { adjective: 'Light fog' },
+    ], { ignoreDuplicates: true });
+
+    console.log('Data insertion finished.');
+    await sequelize.close();
   } catch (error) {
-    console.error('Error creating database:', error);
-    return false;
+    console.error('Unable to connect to the database:', error);
   }
 }
 
-async function createTableSchema(connectionOptions) {
-  try {
-    const connection = await createConnection(connectionOptions);
-
-    const createTableSchemaScript = await fs.readFile(path.join(__dirname, 'sql', 'create-table-schema.sql'), 'utf-8');
-    
-    await connection.query(createTableSchemaScript);
-      
-    console.log('Table schema created successfully');
-
-    await connection.close();
-  } catch (error) {
-    console.error('Error initializing database:', error);
-  }
-}
-
-async function fillDatabase(connectionOptions) {
-  try {
-    const connection = await createConnection(connectionOptions);
-
-    const initializeTableScript = await fs.readFile(path.join(__dirname, 'sql', 'fill-database.sql'), 'utf-8');
-    await connection.query(initializeTableScript);
-
-      console.log('Database initialization complete successfuly.');
-
-    await connection.close();
-  } catch (error) {
-    console.error('Error initializing database:', error);
-  }
-}
-
-async function createAndPopulateDatabase(connectionOptions) {
-  const databaseExists = await createDatabaseIfNotExists(connectionOptions);
-
-  if (databaseExists) {
-    console.log('Database exists. Synchronizing...');
-    
-    const connection = await createConnection(connectionOptions);
-    await connection.synchronize(true);
-    
-    console.log('Synchronization complete.');
-    
-    await createTableSchema(connectionOptions);
-    await fillDatabase(connectionOptions);
-  } else {
-    console.error('Failed to create and initialize the database.');
-  }
-}
-
-module.exports = { checkDatabaseExists, createAndPopulateDatabase };
+module.exports = { initializeDatabase };

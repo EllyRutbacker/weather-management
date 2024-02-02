@@ -1,17 +1,17 @@
-const { Entity, PrimaryGeneratedColumn, Column } = require('typeorm');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
 
-@Entity()
-class WeatherCondition {
-  @PrimaryGeneratedColumn()
-  id;
-
-  @Column()
-  adjective;
-
-  constructor(id, adjective) {
-    this.id = id;
-    this.adjective = adjective;
-  }
-}
+const WeatherCondition = sequelize.define('WeatherCondition', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  adjective: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+  },
+});
 
 module.exports = WeatherCondition;

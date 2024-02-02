@@ -7,6 +7,7 @@ WORKDIR /src/app
 COPY package.json .
 COPY index.js .
 COPY /src/app .
+COPY .env .
 
 # Install dependencies
 RUN npm install

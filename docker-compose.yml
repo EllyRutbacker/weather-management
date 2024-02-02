@@ -36,14 +36,5 @@ services:
     volumes:
       - ./src/app/initdb:/docker-entrypoint-initdb.d
 
-  # Node.js Tests
-  node_tests:
-    build:
-      context: .
-      dockerfile: Dockerfile.test
-    depends_on:
-      - node_app
-    command: ["npm", "test"]
-
 volumes:
   postgres_data: 

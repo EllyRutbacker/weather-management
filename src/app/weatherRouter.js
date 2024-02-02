@@ -16,7 +16,6 @@ const {
 const { SERVER_PORT } = process.env;
 
 async function startServer() {
-  
     const server = http.createServer((req, res) => {
         const reqUrl = url.parse(req.url, true);
 
@@ -62,7 +61,7 @@ async function startServer() {
     });
 
     req.on('end', () => {
-      const weatherConditionData = parse(body);
+      const weatherConditionData = JSON.parse(body);
       createWeatherCondition(weatherConditionData.adjective)
         .then((newWeatherCondition) => {
           res.writeHead(201, { 'Content-Type': 'application/json' });
@@ -86,7 +85,7 @@ async function startServer() {
     });
 
     req.on('end', () => {
-      const weatherConditionData = parse(body);
+      const weatherConditionData = JSON.parse(body);
       updateWeatherConditionById(id, weatherConditionData.adjective)
         .then((updatedWeatherCondition) => {
           if (updatedWeatherCondition) {
@@ -106,24 +105,25 @@ async function startServer() {
   }
 
   // Handler for DELETE /weather/:id
-  else if (req.method === 'DELETE' && reqUrl.pathname.startsWith('/weather/')) {
-    const id = reqUrl.pathname.split('/')[2];
-    deleteWeatherConditionById(id)
-      .then((deletedWeatherCondition) => {
-        if (deletedWeatherCondition) {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(deletedWeatherCondition));
-        } else {
-          res.writeHead(404, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Not Found' }));
-        }
-      })
-      .catch((error) => {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Internal Server Error' }));
-        console.error(error);
-      });
+else if (req.method === 'DELETE' && reqUrl.pathname.startsWith('/weather/')) {
+  const id = reqUrl.pathname.split('/')[2];
+
+  try {
+    const deletedWeatherCondition = deleteWeatherConditionById(id);
+
+    if (deletedWeatherCondition) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(deletedWeatherCondition));
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not Found' }));
+    }
+  } catch (error) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Internal Server Error' }));
+    console.error(error);
   }
+}
 
   // If there is no end point for the input request
   else {
@@ -137,5 +137,4 @@ async function startServer() {
 });
 }
 
-// Start API server
-startServer();
+module.exports = { startServer };
